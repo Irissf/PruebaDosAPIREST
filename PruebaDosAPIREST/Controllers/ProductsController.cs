@@ -1,38 +1,97 @@
-﻿using PruebaDosAPIREST.Models;
+﻿using MySql.Data.MySqlClient;
+using PruebaDosAPIREST.Models;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Http;
 using System.Web.Mvc;
 
+
+
 namespace PruebaDosAPIREST.Controllers
 {
     public class ProductsController : ApiController
     {
-        Product[] products = new Product[]
-     {
-            new Product { Id = 1, Name = "Tomato Soup", Category = "Groceries", Price = 1 },
-            new Product { Id = 2, Name = "Yo-yo", Category = "Toys", Price = 3.75M },
-            new Product { Id = 3, Name = "Hammer", Category = "Hardware", Price = 16.99M },
-            new Product { Id = 4, Name = "Zumo", Category = "Alimento", Price = 1.2M },
-            new Product { Id = 5, Name = "Peras", Category = "Alimento", Price = 0.55M }
 
-     };
+        private MySqlConnection conection = new MySqlConnection();
+        private List<Product> productos = new List<Product>();
+        private Product producto;
+
+
+
 
         public IEnumerable<Product> GetAllProducts()
         {
-            return products;
+            ProductosBD();
+            return productos;
         }
 
-        public IHttpActionResult GetProduct(int id)
+        //public IHttpActionResult GetProduct(int id)
+        //{
+        //    var product = products.FirstOrDefault((p) => p.Id == id);
+        //    if (product == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    return Ok(product);
+        //}
+
+
+        //Consultas
+        public void ProductosBD()
         {
-            var product = products.FirstOrDefault((p) => p.Id == id);
-            if (product == null)
+            abrirConexion();
+
+            try
             {
-                return NotFound();
+                MySqlDataReader reader = null;
+                MySqlCommand cm = new MySqlCommand("select * from productos", conection);
+                reader = cm.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    producto = new Product();
+                    producto.Id = Convert.ToInt32(reader["id"].ToString());
+                    producto.Nombre = reader["nombre"].ToString();
+                    producto.Precio = Convert.ToDouble(reader["precio"].ToString());
+                    producto.Cantidad = Convert.ToInt32(reader["cantidad"].ToString());
+
+                    productos.Add(producto);
+                }
             }
-            return Ok(product);
+            catch (MySqlException e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
+            cerrarConexion();
+        }
+        public void abrirConexion()
+        {
+            string servidor = "localhost";
+            string bd = "pruebaapi";
+            string usuario = "root";
+            string password = "";
+            string puerto = "3306";
+
+            string cadenaConexion = "server=" + servidor + ";port=" + puerto + ";user id=" + usuario + ";password=" + password + ";database=" + bd + ";";
+
+            try
+            {
+                conection.ConnectionString = cadenaConexion;
+                conection.Open();
+                Console.WriteLine("conectado");
+            }
+            catch (MySqlException e)
+            {
+                Console.WriteLine(e.Message);
+            }
+        }
+        public void cerrarConexion()
+        {
+            conection.Close();
         }
     }
 }
